@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>固定URLイラスト並べ替えギャラリー</title>
+  <style>
+    body { font-family: sans-serif; background: #fafafa; padding: 20px; }
+    h1 { font-size: 1.4em; }
+    .gallery { display: flex; flex-wrap: wrap; gap: 10px; }
+    .image-container { width: 150px; height: 150px; border: 2px dashed #ccc; border-radius: 10px; overflow: hidden; display: flex; justify-content: center; align-items: center; background: white; position: relative; }
+    .image-container img { width: 100%; height: 100%; object-fit: cover; }
+    .image-container.dragover { border-color: #007bff; background: #eef6ff; }
+    ul { list-style: none; padding: 0; }
+    li { background: white; padding: 5px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 5px; word-break: break-all; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h1>固定URLイラスト並べ替えギャラリー</h1>
+  <p>GitHub Pagesにアップした画像URLを登録して、ドラッグ＆ドロップで入れ替えできます。Clusterの <code>urlTexture</code> で使えます。</p>
+
+  <div>
+    <input id="urlInput" type="url" placeholder="画像の固定URLを入力" style="width:70%;padding:5px;">
+    <button id="addBtn">追加</button>
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+
+  <h2>固定URL一覧</h2>
+  <ul id="urlList"></ul>
+
+  <script>
+    const gallery = document.getElementById('gallery');
+    const urlList = document.getElementById('urlList');
+    const addBtn = document.getElementById('addBtn');
+    const urlInput = document.getElementById('urlInput');
+
+    let images = JSON.parse(localStorage.getItem('fixedImageURLs') || '[]');
+
+    function renderGallery() {
+      gallery.innerHTML = '';
+      urlList.innerHTML = '';
+      images.forEach((url, index) => {
+        const div = document.createElement('div');
+        div.className = 'image-container';
+        div.draggable = true;
+        div.dataset.index = index;
+
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = `image-${index}`;
+        div.appendChild(img);
+
+        // --- Drag Events ---
+        div.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', index);
+        });
+
+        div.addEventListener('dragover', e => {
+          e.preventDefault();
+          div.classList.add('dragover');
+        });
+
+        div.addEventListener('dragleave', () => {
+          div.classList.remove('dragover');
+        });
+
+        div.addEventListener('drop', e => {
+          e.preventDefault();
+          div.classList.remove('dragover');
+          const fromIndex = e.dataTransfer.getData('text/plain');
+          const toIndex = index;
+          const moved = images.splice(fromIndex, 1)[0];
+          images.splice(toIndex, 0, moved);
+          saveAndRender();
+        });
+
+        gallery.appendChild(div);
+
+        const li = document.createElement('li');
+        li.textContent = url;
+        urlList.appendChild(li);
+      });
+    }
+
+    function saveAndRender() {
+      localStorage.setItem('fixedImageURLs', JSON.stringify(images));
+      renderGallery();
+    }
+
+    addBtn.addEventListener('click', () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      images.push(url);
+      urlInput.value = '';
+      saveAndRender();
+    });
+
+    renderGallery();
+  </script>
+</body>
+</html>
